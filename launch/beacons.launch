@@ -1,4 +1,4 @@
-<!-- Launch just the timothyw test node -->
+<!-- Launch the beacon_node.py node with the beacon params -->
 <launch >
     <node pkg="ecte477-starter-python" type="beacon_node.py" name="beacon_node" output="screen">
         <rosparam>
