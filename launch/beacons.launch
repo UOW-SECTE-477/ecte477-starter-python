@@ -1,13 +1,6 @@
 <!-- Launch the beacon_node.py node with the beacon params -->
 <launch >
     <node pkg="ecte477-starter-python" type="beacon_node.py" name="beacon_node" output="screen">
-        <rosparam>
-            beacons: [
-                { id: 0, top: pink, bottom: green },
-                { id: 1, top: blue, bottom: pink },
-                { id: 2, top: pink, bottom: yellow },
-                { id: 3, top: yellow, bottom: pink }
-            ]
-        </rosparam>
+        <rosparam file="$(find ecte477-starter-python)/param/beacons.yaml" command="load" />
     </node>
 </launch>
