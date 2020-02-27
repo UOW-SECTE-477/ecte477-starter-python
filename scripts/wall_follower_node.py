@@ -21,7 +21,7 @@ from geometry_msgs.msg import Twist, Point
 from sensor_msgs.msg import LaserScan
 from std_msgs.msg import String
 from enum import Enum
-from commands import Commands
+from commands import RobotState
 
 # Constants
 BASE_FRAME =        "base_link"         # Param from the SLAM module
@@ -45,10 +45,10 @@ class wall_follower_node:
         self.transform_listener = tf.TransformListener()
 
         self.subscriber_laser_scan = rospy.Subscriber('scan/', LaserScan, self.callback_laser_scan)
-        self.subscriber_command = rospy.Subscriber('cmd/', String, self.callback_command)
+        self.subscriber_state = rospy.Subscriber('state/', String, self.callback_state)
         self.publisher_twist = rospy.Publisher('cmd_vel', Twist, queue_size=1)
 
-    # Send a find stop command before shutting off the node
+    # Send a final stop command before shutting off the node
     def shutdown(self):
         if not self.stopped:
             self.stopped = True
@@ -64,10 +64,13 @@ class wall_follower_node:
 
 
     def callback_laser_scan(self, data):
-        print "callback_laser_scan()"
         # If we are no longer exloring don't process the scan
         if not self.explore:
-            # If we aren't exploring, but we haven't told the robot to stop, do so now
+            # If we aren't exploring, but we haven't told the robot to stop, do so now.
+            # This is located here rather than in the other callback because the stop command
+            # might be received halfway through processing a laser scan, then the laser scan
+            # callback's move command will come after the stop and the robot will start moving
+            # again.
             if not self.stopped:
                 self.stopped = True
                 vel_msg = Twist()
@@ -82,6 +85,7 @@ class wall_follower_node:
         # Otherwise, process the scan.
 
         # Find the transform between the laser scanner and the robots base frame
+        # The transformations are all populated at startup
         try:
             self.transform_listener.waitForTransform(BASE_FRAME, data.header.frame_id, data.header.stamp, rospy.Duration(2.0))
             position, quaternion = self.transform_listener.lookupTransform(BASE_FRAME, data.header.frame_id, data.header.stamp)
@@ -122,7 +126,7 @@ class wall_follower_node:
                 if point_x < x_front_min:
                     x_front_min = point_x
 
-        print "Detected walls {0} left, {1} front".format(x_side_max, x_front_min)
+        # print "Detected walls {0} left, {1} front".format(x_side_max, x_front_min)
 
         turn = 0.0
         drive = 0.0
@@ -162,24 +166,26 @@ class wall_follower_node:
         vel_msg.angular.x = 0
         vel_msg.angular.y = 0
         vel_msg.angular.z = turn * MAX_TURN_SPEED
-        print "Publishing velocities {0} m/s, {1} r/s".format(vel_msg.linear.x, vel_msg.angular.z)
+        # print "Publishing velocities {0} m/s, {1} r/s".format(vel_msg.linear.x, vel_msg.angular.z)
         self.publisher_twist.publish(vel_msg)
         self.stopped = False
 
 
 
 
-    def callback_command(self, data):
-        print "callback_command()"
-        command = Commands(data.data)
+    def callback_state(self, data):
+        state = RobotState(data.data)
 
-        if command is Commands.EXPLORE:
+        if state is RobotState.EXPLORING and not self.explore:
             self.explore = True
             print 'Starting Exploring'
-        elif command is Commands.RETURN or command is Commands.HALT:
+        elif (state is RobotState.RETURNING or state is RobotState.PAUSED) and self.explore:
             print 'Stopping Exploring'
             self.explore = False
             self.stopped = False
+            # setting explore to false and stopped to false will cause the next laser scan
+            # callback to send a stop command then set stopped to true.
+            
 
     
 if __name__ == '__main__':
