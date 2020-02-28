@@ -1,7 +1,7 @@
 """
     commands.py
 
-    Defines an Enum for valid commands to be sent over cmd/ topic
+    Defines an Enum for valid commands to be sent over cmd/ and state/ topics
 
     Using an Enum whose values are equal to the strings we expect is a
     safer method than using the strings themselves. With string alone,

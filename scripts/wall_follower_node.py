@@ -151,7 +151,7 @@ class wall_follower_node:
             drive_front = np.clip((x_front_min - MIN_APPROACH_DIST) / (MAX_APPROACH_DIST - MIN_APPROACH_DIST), 0.0, 1.0)
 
             # Combine two turn and drive decisions
-            turn = turn_side - 0.5 * turn_front
+            turn = turn_side - turn_front
             drive = drive_side * drive_front
 
         # Flip turn if we are following to the right
