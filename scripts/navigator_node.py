@@ -13,9 +13,6 @@
 
 import rospy
 from commands import RobotState
-from std_msgs.msg import String, Header, Time
-from geometry_msgs.msg import PoseStamped, Twist
-from actionlib_msgs.msg import GoalID
 
 class navigator_node:
     def __init__(self):
